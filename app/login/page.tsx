@@ -58,7 +58,7 @@ export default function LoginPage() {
           </div>
           <h1 className="text-3xl font-bold text-gray-900">割引マップ</h1>
           <p className="text-gray-700 font-semibold text-lg mt-2">近くのお得、みんなで見つける。</p>
-          <p className="text-gray-500 text-sm mt-1">スーパーやお店の割引情報をリアルタイムで共有できる口コミマップ</p>
+          <p className="text-gray-500 text-xs mt-1 whitespace-nowrap">スーパーやお店の割引情報をリアルタイムで共有できる口コミマップ</p>
         </div>
 
         <form onSubmit={handleLogin} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 space-y-4">
