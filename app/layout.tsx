@@ -4,6 +4,7 @@ import './globals.css'
 export const metadata: Metadata = {
   title: '割引マップ',
   description: 'スーパーやお店の割引・タイムセール情報をリアルタイムで共有できる口コミマップ。近所のお得情報を地図で確認しよう。',
+  verification: { google: '8rdv6-oBxoLXhDcxQa41xRmsPNIYtLRMosa_A3xjWdY' },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
