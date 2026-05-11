@@ -8,7 +8,6 @@ import {
   doc, updateDoc, arrayUnion, arrayRemove, deleteDoc
 } from 'firebase/firestore'
 import { auth, db } from '@/lib/firebase'
-import { useRouter } from 'next/navigation'
 
 const Map = dynamic(() => import('@/components/Map'), { ssr: false })
 
@@ -135,16 +134,14 @@ export default function Home() {
   const [editDiscount, setEditDiscount] = useState('')
   const [editExpiryDate, setEditExpiryDate] = useState('')
   const [editSubmitting, setEditSubmitting] = useState(false)
-  const router = useRouter()
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, u => {
       setUser(u)
       setAuthLoading(false)
-      if (!u) router.push('/login')
     })
     return unsub
-  }, [router])
+  }, [])
 
   const fetchPosts = useCallback(async (r: string) => {
     setFetching(true)
@@ -381,7 +378,105 @@ export default function Home() {
     )
   }
 
-  if (!user) return null
+  if (!user) return (
+    <div className="min-h-full bg-white">
+      {/* Hero */}
+      <div className="bg-gradient-to-b from-green-50 to-white px-6 py-16 text-center">
+        <div className="w-16 h-16 bg-green-600 rounded-3xl flex items-center justify-center mx-auto mb-5 shadow-lg">
+          <svg width="36" height="36" viewBox="0 0 32 32" fill="none">
+            <path d="M16 2C10.477 2 6 6.477 6 12c0 7.5 10 19 10 19s10-11.5 10-19c0-5.523-4.477-10-10-10z" fill="white"/>
+            <circle cx="16" cy="12" r="6.5" fill="#16a34a"/>
+            <line x1="13" y1="8.5" x2="16" y2="12.5" stroke="white" strokeWidth="1.8" strokeLinecap="round"/>
+            <line x1="19" y1="8.5" x2="16" y2="12.5" stroke="white" strokeWidth="1.8" strokeLinecap="round"/>
+            <line x1="16" y1="12.5" x2="16" y2="17.5" stroke="white" strokeWidth="1.8" strokeLinecap="round"/>
+            <line x1="13" y1="14" x2="19" y2="14" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+            <line x1="13" y1="16" x2="19" y2="16" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+          </svg>
+        </div>
+        <h1 className="text-4xl font-bold text-gray-900 mb-3">割引マップ</h1>
+        <p className="text-xl font-semibold text-green-700 mb-2">近くのお得、みんなで見つける。</p>
+        <p className="text-gray-500 text-sm mb-8 max-w-xs mx-auto">スーパーやお店の割引・タイムセール情報を地図上でリアルタイムに共有できる口コミマップです。</p>
+        <div className="flex flex-col gap-3 max-w-xs mx-auto">
+          <a href="/register" className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl text-center transition-colors">
+            無料で始める
+          </a>
+          <a href="/login" className="w-full py-3 border border-gray-300 text-gray-700 font-medium rounded-xl text-center hover:bg-gray-50 transition-colors">
+            ログイン
+          </a>
+        </div>
+      </div>
+
+      {/* 特徴 */}
+      <div className="px-6 py-12 max-w-lg mx-auto">
+        <h2 className="text-xl font-bold text-gray-900 text-center mb-8">割引マップでできること</h2>
+        <div className="space-y-6">
+          <div className="flex gap-4">
+            <div className="w-12 h-12 bg-green-100 rounded-2xl flex items-center justify-center flex-shrink-0 text-2xl">📍</div>
+            <div>
+              <h3 className="font-bold text-gray-900 mb-1">近くのお得情報を地図で確認</h3>
+              <p className="text-sm text-gray-500">スーパーやドラッグストアなど、近所のお店の割引情報をリアルタイムで地図上に表示。外出前にチェックして賢くお買い物できます。</p>
+            </div>
+          </div>
+          <div className="flex gap-4">
+            <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center flex-shrink-0 text-2xl">✏️</div>
+            <div>
+              <h3 className="font-bold text-gray-900 mb-1">割引情報を簡単投稿</h3>
+              <p className="text-sm text-gray-500">地図をタップしてお店の場所を選び、割引内容と有効期限を入力するだけ。30秒で投稿完了。タイムセールや特売情報をご近所にシェアしましょう。</p>
+            </div>
+          </div>
+          <div className="flex gap-4">
+            <div className="w-12 h-12 bg-yellow-100 rounded-2xl flex items-center justify-center flex-shrink-0 text-2xl">★</div>
+            <div>
+              <h3 className="font-bold text-gray-900 mb-1">気になる情報を保存</h3>
+              <p className="text-sm text-gray-500">後で使いたい割引情報はブックマーク保存。マイページからいつでも確認できます。役立った投稿には「ありがとう」で感謝を伝えることもできます。</p>
+            </div>
+          </div>
+          <div className="flex gap-4">
+            <div className="w-12 h-12 bg-purple-100 rounded-2xl flex items-center justify-center flex-shrink-0 text-2xl">🗾</div>
+            <div>
+              <h3 className="font-bold text-gray-900 mb-1">全国47都道府県に対応</h3>
+              <p className="text-sm text-gray-500">北海道から沖縄まで、全国どこでも利用できます。地域を切り替えて、旅行先や帰省先のお得情報もチェックできます。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 使い方 */}
+      <div className="bg-gray-50 px-6 py-12">
+        <div className="max-w-lg mx-auto">
+          <h2 className="text-xl font-bold text-gray-900 text-center mb-8">使い方はとても簡単</h2>
+          <ol className="space-y-4">
+            {[
+              { step: '1', title: 'アカウントを作成', desc: 'メールアドレスとパスワードだけで無料登録できます。' },
+              { step: '2', title: '地域を選んで地図を確認', desc: '自分の住んでいる地域を選択すると、その地域の割引情報が地図に表示されます。' },
+              { step: '3', title: '割引情報を投稿・活用', desc: '見つけたお得情報を投稿して地域の人に教えたり、他の人の情報を活用してお買い物に役立てましょう。' },
+            ].map(({ step, title, desc }) => (
+              <li key={step} className="flex gap-4">
+                <div className="w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold flex-shrink-0 text-sm">{step}</div>
+                <div>
+                  <p className="font-bold text-gray-900">{title}</p>
+                  <p className="text-sm text-gray-500 mt-0.5">{desc}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </div>
+
+      {/* CTA */}
+      <div className="px-6 py-12 text-center">
+        <h2 className="text-xl font-bold text-gray-900 mb-3">今すぐ近くのお得を見つけよう</h2>
+        <p className="text-sm text-gray-500 mb-6">登録無料・広告なし・ご近所の生の情報が集まります</p>
+        <a href="/register" className="inline-block px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl transition-colors">
+          無料で始める
+        </a>
+      </div>
+
+      <footer className="border-t border-gray-100 px-6 py-6 text-center text-xs text-gray-400">
+        © 2025 割引マップ
+      </footer>
+    </div>
+  )
 
   const mapCenter = (userLocation ?? REGION_CENTERS[region] ?? [35.690, 139.692]) as [number, number]
   const lastUpdatedStr = lastUpdated
