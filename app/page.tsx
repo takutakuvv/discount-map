@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { onAuthStateChanged, signOut, User } from 'firebase/auth'
 import {
@@ -106,7 +106,7 @@ const REGION_CENTERS: Record<string, [number, number]> = {
 
 export default function Home() {
   const [user, setUser] = useState<User | null>(null)
-  const [authLoading, setAuthLoading] = useState(true)
+  const [authLoading, setAuthLoading] = useState(false)
   const [region, setRegion] = useState('東京都')
   const [posts, setPosts] = useState<Post[]>([])
   const [fetching, setFetching] = useState(false)
@@ -134,6 +134,8 @@ export default function Home() {
   const [editDiscount, setEditDiscount] = useState('')
   const [editExpiryDate, setEditExpiryDate] = useState('')
   const [editSubmitting, setEditSubmitting] = useState(false)
+  const [nearbyPlace, setNearbyPlace] = useState<{ name: string, lat: number, lng: number } | null>(null)
+  const lastQueriedRef = useRef<{ lat: number, lng: number } | null>(null)
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, u => {
@@ -317,14 +319,42 @@ export default function Home() {
     if (user) fetchMyPosts(user.uid)
   }
 
-  function handleMapClick(lat: number, lng: number) {
-    if (!showForm) return
-    setPendingLat(lat)
-    setPendingLng(lng)
+  async function handleMapClick(lat: number, lng: number) {
+    if (showForm) {
+      setPendingLat(lat)
+      setPendingLng(lng)
+      return
+    }
+
+    const prev = lastQueriedRef.current
+    if (prev) {
+      const dLat = (lat - prev.lat) * Math.PI / 180
+      const dLng = (lng - prev.lng) * Math.PI / 180
+      const a = Math.sin(dLat / 2) ** 2 +
+        Math.cos(prev.lat * Math.PI / 180) * Math.cos(lat * Math.PI / 180) * Math.sin(dLng / 2) ** 2
+      const dist = 2 * 6371000 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+      if (dist < 50) return
+    }
+    lastQueriedRef.current = { lat, lng }
+    setNearbyPlace(null)
+
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18`,
+        { headers: { 'User-Agent': 'WaribikiMap/1.0' } }
+      )
+      if (!res.ok) return
+      const data = await res.json()
+      const roadCategories = new Set(['highway', 'boundary', 'place', 'waterway', 'railway', 'landuse', 'natural', 'aeroway'])
+      if (data.name && !roadCategories.has(data.category)) {
+        setNearbyPlace({ name: data.name, lat: parseFloat(data.lat), lng: parseFloat(data.lon) })
+      }
+    } catch {}
   }
 
   function handleOpenForm() {
     setShowForm(true)
+    setNearbyPlace(null)
     setPendingLat(null)
     setPendingLng(null)
     setStoreName('')
@@ -564,6 +594,38 @@ export default function Home() {
         {showForm && pendingLat === null && (
           <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/70 text-white text-sm px-4 py-2 rounded-full z-[1000] pointer-events-none">
             地図をタップしてお店の場所を選択
+          </div>
+        )}
+
+        {!showForm && nearbyPlace && (
+          <div className="absolute bottom-24 left-4 right-20 z-[1000] bg-white rounded-2xl shadow-lg px-3 py-2.5 flex items-center gap-2">
+            <svg className="w-5 h-5 text-green-600 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 22V12h6v10"/>
+            </svg>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-gray-400">📍 近くのお店</p>
+              <p className="font-bold text-sm truncate">{nearbyPlace.name}</p>
+            </div>
+            <button
+              onClick={() => {
+                setStoreName(nearbyPlace.name)
+                setPendingLat(nearbyPlace.lat)
+                setPendingLng(nearbyPlace.lng)
+                setDiscount('')
+                setExpiryDate('')
+                setShowForm(true)
+                setNearbyPlace(null)
+              }}
+              className="bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-3 py-1.5 rounded-xl shrink-0 transition-colors"
+            >
+              投稿
+            </button>
+            <button onClick={() => setNearbyPlace(null)} className="text-gray-400 hover:text-gray-600 shrink-0">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
           </div>
         )}
 
