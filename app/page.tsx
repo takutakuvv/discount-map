@@ -811,8 +811,8 @@ export default function Home() {
         </div>
       )}
 
-      {/* 投稿編集モーダル */}
-      {editingPost && (
+      {/* 投稿編集モーダル（マップポップアップから開いた場合） */}
+      {editingPost && !showMyPage && (
         <div className="absolute inset-0 bg-black/50 z-[2000] flex items-end">
           <div className="bg-white w-full rounded-t-2xl p-5">
             <div className="flex items-center justify-between mb-4">
@@ -956,6 +956,47 @@ export default function Home() {
       {showMyPage && (
         <div className="absolute inset-0 bg-black/50 z-[2000] flex items-end sm:items-stretch sm:justify-end">
           <div className="bg-white w-full sm:w-96 rounded-t-2xl sm:rounded-none flex flex-col max-h-[85vh] sm:max-h-full">
+
+            {/* インライン編集フォーム */}
+            {editingPost ? (
+              <>
+                <div className="px-4 py-3 border-b border-gray-200 flex items-center gap-3 flex-shrink-0">
+                  <button onClick={() => setEditingPost(null)} className="text-gray-400 hover:text-gray-600">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                  </button>
+                  <h2 className="font-bold text-gray-900">投稿を編集</h2>
+                </div>
+                <div className="flex-1 overflow-y-auto p-5">
+                  <form onSubmit={handleEditSubmit} className="space-y-3">
+                    <input type="text" value={editStoreName} onChange={e => setEditStoreName(e.target.value)} required
+                      placeholder="お店の名前"
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                    <input type="text" value={editDiscount} onChange={e => setEditDiscount(e.target.value)} required
+                      placeholder="割引情報"
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">有効期限（未入力の場合は1週間後）</label>
+                      <input type="date" value={editExpiryDate} onChange={e => setEditExpiryDate(e.target.value)}
+                        min={new Date().toISOString().split('T')[0]}
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                    </div>
+                    <div className="flex gap-2 pt-1">
+                      <button type="button" onClick={() => setEditingPost(null)}
+                        className="flex-1 py-2.5 border border-gray-300 text-gray-600 rounded-xl text-sm font-medium">
+                        キャンセル
+                      </button>
+                      <button type="submit" disabled={editSubmitting}
+                        className="flex-1 py-2.5 bg-green-600 text-white rounded-xl text-sm font-bold disabled:opacity-50">
+                        {editSubmitting ? '保存中...' : '保存する'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </>
+            ) : (
+              <>
             <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
               <h2 className="font-bold text-gray-900">投稿一覧</h2>
               <button onClick={() => setShowMyPage(false)} className="text-gray-400 hover:text-gray-600">
@@ -1144,6 +1185,8 @@ export default function Home() {
                 )
               )}
             </div>
+              </>
+            )}
           </div>
         </div>
       )}
