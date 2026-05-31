@@ -480,7 +480,7 @@ export default function Home() {
             <line x1="13" y1="16" x2="19" y2="16" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
           </svg>
         </div>
-        <h1 className="text-4xl font-bold text-gray-900 mb-3">割引マップ</h1>
+        <h1 className="text-4xl font-bold text-gray-900 mb-3">Waribiki Map</h1>
         <p className="text-xl font-semibold text-green-700 mb-2">近くのお得、みんなで見つける。</p>
         <p className="text-gray-500 text-sm mb-8 max-w-xs mx-auto">スーパーやお店の割引・タイムセール情報を地図上でリアルタイムに共有できる口コミマップです。</p>
         <div className="flex flex-col gap-3 max-w-xs mx-auto">
@@ -495,7 +495,7 @@ export default function Home() {
 
       {/* 特徴 */}
       <div className="px-6 py-12 max-w-lg mx-auto">
-        <h2 className="text-xl font-bold text-gray-900 text-center mb-8">割引マップでできること</h2>
+        <h2 className="text-xl font-bold text-gray-900 text-center mb-8">Waribiki Mapでできること</h2>
         <div className="space-y-6">
           <div className="flex gap-4">
             <div className="w-12 h-12 bg-green-100 rounded-2xl flex items-center justify-center flex-shrink-0 text-2xl">📍</div>
@@ -550,17 +550,8 @@ export default function Home() {
         </div>
       </div>
 
-      {/* CTA */}
-      <div className="px-6 py-12 text-center">
-        <h2 className="text-xl font-bold text-gray-900 mb-3">今すぐ近くのお得を見つけよう</h2>
-        <p className="text-sm text-gray-500 mb-6">登録無料・広告なし・ご近所の生の情報が集まります</p>
-        <a href="/register" className="inline-block px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl transition-colors">
-          無料で始める
-        </a>
-      </div>
-
       <footer className="border-t border-gray-100 px-6 py-6 text-center text-xs text-gray-400">
-        © 2025 割引マップ
+        © 2025 Waribiki Map
       </footer>
     </div>
   )
