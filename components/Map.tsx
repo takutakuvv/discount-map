@@ -45,6 +45,7 @@ function ClickHandler({ onMapClick }: { onMapClick: (lat: number, lng: number) =
 interface MapProps {
   posts: Post[]
   center: [number, number]
+  zoom?: number
   onMapClick: (lat: number, lng: number) => void
   pendingLat: number | null
   pendingLng: number | null
@@ -56,14 +57,14 @@ interface MapProps {
   onEdit: (post: Post) => void
 }
 
-export default function Map({ posts, center, onMapClick, pendingLat, pendingLng, currentUserId, onThanks, onDelete, bookmarkedIds, onBookmark, onEdit }: MapProps) {
+export default function Map({ posts, center, zoom, onMapClick, pendingLat, pendingLng, currentUserId, onThanks, onDelete, bookmarkedIds, onBookmark, onEdit }: MapProps) {
   const mapRef = useRef<L.Map | null>(null)
 
   useEffect(() => {
     if (mapRef.current) {
-      mapRef.current.setView(center, mapRef.current.getZoom())
+      mapRef.current.setView(center, zoom ?? mapRef.current.getZoom())
     }
-  }, [center])
+  }, [center, zoom])
 
   return (
     <MapContainer center={center} zoom={13} className="w-full h-full" ref={mapRef}>

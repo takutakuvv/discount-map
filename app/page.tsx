@@ -135,6 +135,8 @@ export default function Home() {
   const [editExpiryDate, setEditExpiryDate] = useState('')
   const [editSubmitting, setEditSubmitting] = useState(false)
   const [nearbyPlace, setNearbyPlace] = useState<{ name: string, lat: number, lng: number } | null>(null)
+  const [flyCenter, setFlyCenter] = useState<[number, number] | null>(null)
+  const [flyZoom, setFlyZoom] = useState<number | undefined>(undefined)
   const lastQueriedRef = useRef<{ lat: number, lng: number } | null>(null)
 
   useEffect(() => {
@@ -261,9 +263,19 @@ export default function Home() {
   function handleLocate() {
     if (!navigator.geolocation) return
     navigator.geolocation.getCurrentPosition(
-      pos => setUserLocation([pos.coords.latitude, pos.coords.longitude]),
+      pos => {
+        setUserLocation([pos.coords.latitude, pos.coords.longitude])
+        setFlyCenter(null)
+        setFlyZoom(undefined)
+      },
       () => alert('現在地を取得できませんでした。位置情報の許可を確認してください。')
     )
+  }
+
+  function handleGoToPost(post: Post) {
+    setFlyCenter([post.lat, post.lng])
+    setFlyZoom(16)
+    setShowMyPage(false)
   }
 
   function handleOpenEdit(post: Post) {
@@ -304,6 +316,8 @@ export default function Home() {
     setRegion(r)
     localStorage.setItem(REGION_KEY, r)
     setShowRegionPicker(false)
+    setFlyCenter(null)
+    setFlyZoom(undefined)
     fetchPosts(r)
   }
 
@@ -458,7 +472,7 @@ export default function Home() {
             <div className="w-12 h-12 bg-yellow-100 rounded-2xl flex items-center justify-center flex-shrink-0 text-2xl">★</div>
             <div>
               <h3 className="font-bold text-gray-900 mb-1">気になる情報を保存</h3>
-              <p className="text-sm text-gray-500">後で使いたい割引情報はブックマーク保存。マイページからいつでも確認できます。役立った投稿には「ありがとう」で感謝を伝えることもできます。</p>
+              <p className="text-sm text-gray-500">後で使いたい割引情報はブックマーク保存。投稿一覧からいつでも確認できます。役立った投稿には「ありがとう」で感謝を伝えることもできます。</p>
             </div>
           </div>
           <div className="flex gap-4">
@@ -508,7 +522,7 @@ export default function Home() {
     </div>
   )
 
-  const mapCenter = (userLocation ?? REGION_CENTERS[region] ?? [35.690, 139.692]) as [number, number]
+  const mapCenter = (flyCenter ?? userLocation ?? REGION_CENTERS[region] ?? [35.690, 139.692]) as [number, number]
   const lastUpdatedStr = lastUpdated
     ? `${lastUpdated.getHours()}:${String(lastUpdated.getMinutes()).padStart(2, '0')} 更新`
     : ''
@@ -552,11 +566,12 @@ export default function Home() {
           <button
             onClick={handleOpenMyPage}
             className="relative flex items-center gap-1 px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 transition-colors"
+            title="投稿一覧"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
             </svg>
-            <span className="hidden sm:inline">マイページ</span>
+            <span className="hidden sm:inline">投稿一覧</span>
             {bookmarks.length > 0 && (
               <span className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 text-white text-xs rounded-full flex items-center justify-center font-bold">
                 {bookmarks.length}
@@ -565,9 +580,15 @@ export default function Home() {
           </button>
           <button
             onClick={() => { setNicknameInput(nickname); setShowNicknameEditor(true) }}
-            className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1.5 rounded-lg hover:bg-gray-100"
+            className="flex items-center gap-1 text-gray-500 hover:text-gray-700 px-2 py-1.5 rounded-lg hover:bg-gray-100"
+            title="アカウント設定"
           >
-            {nickname || '👤'}
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10"/>
+              <circle cx="12" cy="9" r="3"/>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6.168 18.849A4 4 0 0110 16h4a4 4 0 013.832 2.849"/>
+            </svg>
+            {nickname && <span className="hidden sm:inline text-xs max-w-[72px] truncate">{nickname}</span>}
           </button>
           <button onClick={() => signOut(auth)} className="text-xs text-gray-400 hover:text-gray-600 px-2 py-1.5">
             ログアウト
@@ -580,6 +601,7 @@ export default function Home() {
         <Map
           posts={posts}
           center={mapCenter}
+          zoom={flyZoom}
           onMapClick={handleMapClick}
           pendingLat={pendingLat}
           pendingLng={pendingLng}
@@ -777,10 +799,10 @@ export default function Home() {
                 </ul>
               </div>
               <div className="space-y-2">
-                <p className="font-semibold text-yellow-600">★ 保存・マイページ</p>
+                <p className="font-semibold text-yellow-600">★ 保存・投稿一覧</p>
                 <ul className="list-disc list-inside space-y-1 text-gray-600 text-xs leading-relaxed">
                   <li>他の人の投稿を <span className="font-bold">☆ 保存</span> でブックマーク</li>
-                  <li>マイページで自分の投稿・保存済みを確認</li>
+                  <li>投稿一覧で自分の投稿・保存済みを確認</li>
                   <li>🙏 ありがとうボタンで役立った投稿に感謝</li>
                 </ul>
               </div>
@@ -851,12 +873,12 @@ export default function Home() {
         </div>
       )}
 
-      {/* マイページパネル */}
+      {/* 投稿一覧パネル */}
       {showMyPage && (
         <div className="absolute inset-0 bg-black/50 z-[2000] flex items-end sm:items-stretch sm:justify-end">
           <div className="bg-white w-full sm:w-96 rounded-t-2xl sm:rounded-none flex flex-col max-h-[85vh] sm:max-h-full">
             <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
-              <h2 className="font-bold text-gray-900">マイページ</h2>
+              <h2 className="font-bold text-gray-900">投稿一覧</h2>
               <button onClick={() => setShowMyPage(false)} className="text-gray-400 hover:text-gray-600">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
@@ -908,7 +930,10 @@ export default function Home() {
                     {myAllPosts.map(post => (
                       <li key={post.id} className="px-4 py-3">
                         <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0 flex-1">
+                          <button
+                            onClick={() => handleGoToPost(post)}
+                            className="min-w-0 flex-1 text-left hover:bg-gray-50 active:bg-gray-100 -mx-1 px-1 rounded-lg transition-colors"
+                          >
                             <p className="text-sm font-semibold text-gray-900 truncate">{post.storeName}</p>
                             <p className="text-xs text-green-700 mt-0.5">{post.discount}</p>
                             <div className="flex items-center gap-2 mt-1 text-xs text-gray-400">
@@ -918,8 +943,11 @@ export default function Home() {
                               <span>·</span>
                               <span>🙏 {post.thanks.length}</span>
                             </div>
-                            <p className="text-xs text-gray-300 mt-0.5">{formatDate(post.createdAt)}</p>
-                          </div>
+                            <p className="text-xs text-gray-300 mt-0.5 flex items-center gap-1">
+                              {formatDate(post.createdAt)}
+                              <span className="text-green-400">📍 地図で見る</span>
+                            </p>
+                          </button>
                           <div className="flex flex-col gap-1 flex-shrink-0">
                             <button
                               onClick={() => handleOpenEdit(post)}
@@ -953,7 +981,10 @@ export default function Home() {
                     {bookmarks.map(post => (
                       <li key={post.id} className="px-4 py-3">
                         <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0 flex-1">
+                          <button
+                            onClick={() => handleGoToPost(post)}
+                            className="min-w-0 flex-1 text-left hover:bg-gray-50 active:bg-gray-100 -mx-1 px-1 rounded-lg transition-colors"
+                          >
                             <p className="text-sm font-semibold text-gray-900 truncate">{post.storeName}</p>
                             <p className="text-xs text-green-700 mt-0.5">{post.discount}</p>
                             <div className="flex items-center gap-2 mt-1 text-xs text-gray-400">
@@ -963,7 +994,8 @@ export default function Home() {
                               <span>·</span>
                               <span>{post.posterNickname || '匿名'}さん</span>
                             </div>
-                          </div>
+                            <p className="text-xs text-green-400 mt-0.5">📍 地図で見る</p>
+                          </button>
                           <button
                             onClick={() => handleRemoveBookmark(post.id)}
                             className="text-xs text-gray-400 hover:text-red-400 px-2 py-1 rounded hover:bg-red-50 flex-shrink-0"
