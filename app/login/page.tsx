@@ -56,7 +56,7 @@ export default function LoginPage() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
             </svg>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">割引マップ</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Waribiki Map</h1>
           <p className="text-gray-700 font-semibold text-lg mt-2">近くのお得、みんなで見つける。</p>
           <p className="text-gray-500 text-xs mt-1 whitespace-nowrap">スーパーやお店の割引情報をリアルタイムで共有できる口コミマップ</p>
         </div>

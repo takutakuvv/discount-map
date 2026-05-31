@@ -5,6 +5,11 @@ import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaf
 import L from 'leaflet'
 import type { Post } from '@/app/page'
 
+const CATEGORY_ICONS: Record<string, string> = {
+  'スーパー': '🛒', 'コンビニ': '🏪', 'ドラッグストア': '💊',
+  '飲食店': '🍽️', 'ショッピング': '🛍️', 'その他': '📦',
+}
+
 const storeIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
@@ -85,8 +90,14 @@ export default function Map({ posts, center, zoom, onMapClick, pendingLat, pendi
         return (
           <Marker key={post.id} position={[post.lat, post.lng]} icon={storeIcon}>
             <Popup>
-              <div className="min-w-[190px] space-y-1.5">
+              <div className="min-w-[200px] space-y-1.5">
+                {post.imageUrl && (
+                  <img src={post.imageUrl} alt={post.storeName} className="w-full h-28 object-cover rounded-lg -mt-1 mb-1" />
+                )}
                 <p className="font-bold text-base">{post.storeName}</p>
+                <span className="inline-block text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                  {post.category ?? 'その他'}
+                </span>
                 <p className="text-green-700 font-semibold">{post.discount}</p>
                 {post.expiresAt && (
                   <p className="text-xs text-gray-400">{formatExpiry(post.expiresAt)}</p>

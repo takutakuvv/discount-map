@@ -7,7 +7,8 @@ import {
   collection, addDoc, getDocs, query, where, Timestamp, orderBy, limit,
   doc, updateDoc, arrayUnion, arrayRemove, deleteDoc
 } from 'firebase/firestore'
-import { auth, db } from '@/lib/firebase'
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { auth, db, storage } from '@/lib/firebase'
 
 const Map = dynamic(() => import('@/components/Map'), { ssr: false })
 
@@ -23,6 +24,14 @@ export interface Post {
   createdAt: Date
   thanks: string[]
   posterNickname: string
+  category: string
+  imageUrl: string | null
+}
+
+export const CATEGORIES = ['スーパー', 'コンビニ', 'ドラッグストア', '飲食店', 'ショッピング', 'その他'] as const
+export const CATEGORY_ICONS: Record<string, string> = {
+  'スーパー': '🛒', 'コンビニ': '🏪', 'ドラッグストア': '💊',
+  '飲食店': '🍽️', 'ショッピング': '🛍️', 'その他': '📦',
 }
 
 const NICKNAME_KEY = 'discount-map-nickname'
@@ -44,6 +53,8 @@ function parsePost(v: Record<string, unknown>, id: string): Post {
     createdAt: new Date(v.createdAt as string),
     thanks: (v.thanks as string[]) ?? [],
     posterNickname: (v.posterNickname as string) ?? '',
+    category: (v.category as string) ?? 'その他',
+    imageUrl: (v.imageUrl as string) ?? null,
   }
 }
 
@@ -137,6 +148,9 @@ export default function Home() {
   const [nearbyPlace, setNearbyPlace] = useState<{ name: string, lat: number, lng: number } | null>(null)
   const [flyCenter, setFlyCenter] = useState<[number, number] | null>(null)
   const [flyZoom, setFlyZoom] = useState<number | undefined>(undefined)
+  const [postCategory, setPostCategory] = useState('その他')
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
   const lastQueriedRef = useRef<{ lat: number, lng: number } | null>(null)
 
   useEffect(() => {
@@ -173,6 +187,8 @@ export default function Home() {
           createdAt: v.createdAt.toDate(),
           thanks: v.thanks ?? [],
           posterNickname: v.posterNickname ?? '',
+          category: v.category ?? 'その他',
+          imageUrl: v.imageUrl ?? null,
         }
       })
       setPosts(data)
@@ -206,6 +222,8 @@ export default function Home() {
           createdAt: v.createdAt.toDate(),
           thanks: v.thanks ?? [],
           posterNickname: v.posterNickname ?? '',
+          category: v.category ?? 'その他',
+          imageUrl: v.imageUrl ?? null,
         }
       })
       setMyAllPosts(data)
@@ -374,12 +392,25 @@ export default function Home() {
     setStoreName('')
     setDiscount('')
     setExpiryDate('')
+    setPostCategory('その他')
+    setImageFile(null)
+    setImagePreview(null)
   }
 
   function handleCancelForm() {
     setShowForm(false)
     setPendingLat(null)
     setPendingLng(null)
+    setPostCategory('その他')
+    setImageFile(null)
+    setImagePreview(null)
+  }
+
+  function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setImageFile(file)
+    setImagePreview(URL.createObjectURL(file))
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -396,12 +427,21 @@ export default function Home() {
       expiresAt = Timestamp.fromDate(d)
     }
 
+    let uploadedImageUrl: string | null = null
+    if (imageFile) {
+      const uploadRef = ref(storage, `posts/${user.uid}/${Date.now()}.jpg`)
+      await uploadBytes(uploadRef, imageFile)
+      uploadedImageUrl = await getDownloadURL(uploadRef)
+    }
+
     await addDoc(collection(db, 'posts'), {
       storeName, discount, lat: pendingLat, lng: pendingLng,
       region, expiresAt, userId: user.uid,
       posterNickname: nickname || '',
       createdAt: Timestamp.now(),
       thanks: [],
+      category: postCategory,
+      imageUrl: uploadedImageUrl,
     })
 
     setSubmitting(false)
@@ -411,6 +451,9 @@ export default function Home() {
     setStoreName('')
     setDiscount('')
     setExpiryDate('')
+    setPostCategory('その他')
+    setImageFile(null)
+    setImagePreview(null)
     fetchPosts(region)
   }
 
@@ -544,7 +587,7 @@ export default function Home() {
               <line x1="13" y1="16" x2="19" y2="16" stroke="#16a34a" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
           </div>
-          <span className="font-bold text-gray-900">割引マップ</span>
+          <span className="font-bold text-gray-900">ホーム</span>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -636,6 +679,9 @@ export default function Home() {
                 setPendingLng(nearbyPlace.lng)
                 setDiscount('')
                 setExpiryDate('')
+                setPostCategory('その他')
+                setImageFile(null)
+                setImagePreview(null)
                 setShowForm(true)
                 setNearbyPlace(null)
               }}
@@ -704,10 +750,52 @@ export default function Home() {
               placeholder="割引情報（例：牛肉30%オフ、本日限り）"
               className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
             <div>
+              <label className="text-xs text-gray-500 mb-1 block">カテゴリ</label>
+              <div className="flex flex-wrap gap-1.5">
+                {CATEGORIES.map(cat => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setPostCategory(cat)}
+                    className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                      postCategory === cat
+                        ? 'bg-green-600 text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
               <label className="text-xs text-gray-500 mb-1 block">有効期限（未入力の場合は1週間後に自動削除）</label>
               <input type="date" value={expiryDate} onChange={e => setExpiryDate(e.target.value)}
                 min={new Date().toISOString().split('T')[0]}
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">写真（任意）</label>
+              {imagePreview ? (
+                <div className="relative">
+                  <img src={imagePreview} alt="preview" className="w-full h-32 object-cover rounded-xl" />
+                  <button
+                    type="button"
+                    onClick={() => { setImageFile(null); setImagePreview(null) }}
+                    className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/60 text-white rounded-full flex items-center justify-center text-xs"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <label className="flex items-center justify-center gap-2 w-full h-16 border-2 border-dashed border-gray-300 rounded-xl text-gray-400 text-sm hover:border-green-400 hover:text-green-500 cursor-pointer transition-colors">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                  </svg>
+                  写真を添付
+                  <input type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
+                </label>
+              )}
             </div>
             <div className="flex gap-2">
               <button type="button" onClick={handleCancelForm}
