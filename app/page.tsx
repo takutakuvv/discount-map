@@ -151,6 +151,7 @@ export default function Home() {
   const [postCategory, setPostCategory] = useState('その他')
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null)
   const lastQueriedRef = useRef<{ lat: number, lng: number } | null>(null)
 
   useEffect(() => {
@@ -336,6 +337,7 @@ export default function Home() {
     setShowRegionPicker(false)
     setFlyCenter(null)
     setFlyZoom(undefined)
+    setCategoryFilter(null)
     fetchPosts(r)
   }
 
@@ -632,8 +634,39 @@ export default function Home() {
 
       {/* Map */}
       <div className="flex-1 relative">
+        {/* カテゴリフィルター */}
+        {!showForm && (
+          <div className="absolute top-2 left-0 right-0 z-[1000] px-3">
+            <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+              <button
+                onClick={() => setCategoryFilter(null)}
+                className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium shadow-sm transition-colors ${
+                  categoryFilter === null
+                    ? 'bg-green-600 text-white'
+                    : 'bg-white text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                すべて
+              </button>
+              {CATEGORIES.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => setCategoryFilter(prev => prev === cat ? null : cat)}
+                  className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium shadow-sm transition-colors ${
+                    categoryFilter === cat
+                      ? 'bg-green-600 text-white'
+                      : 'bg-white text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <Map
-          posts={posts}
+          posts={categoryFilter ? posts.filter(p => p.category === categoryFilter) : posts}
           center={mapCenter}
           zoom={flyZoom}
           onMapClick={handleMapClick}
