@@ -5,6 +5,18 @@ import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaf
 import L from 'leaflet'
 import type { Post } from '@/app/page'
 
+function sharePost(post: Post) {
+  const expiry = post.expiresAt
+    ? `${post.expiresAt.getMonth() + 1}/${post.expiresAt.getDate()}まで`
+    : '期限なし'
+  const text = `【${post.storeName}】\n${post.discount}\n${post.category} · ${expiry}\n#WaribikiMap\nhttps://www.waribiki-map.com`
+  if (typeof navigator !== 'undefined' && navigator.share) {
+    navigator.share({ text }).catch(() => {})
+  } else {
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank')
+  }
+}
+
 const CATEGORY_ICONS: Record<string, string> = {
   'スーパー': '🛒', 'コンビニ': '🏪', 'ドラッグストア': '💊',
   '飲食店': '🍽️', 'ショッピング': '🛍️', 'その他': '📦',
@@ -108,6 +120,15 @@ export default function Map({ posts, center, zoom, onMapClick, pendingLat, pendi
                     <>
                       <div className="text-xs text-gray-400 flex-1">🙏 {post.thanks.length}件</div>
                       <button
+                        onClick={() => sharePost(post)}
+                        className="text-gray-400 hover:text-blue-500 p-1 rounded hover:bg-blue-50"
+                        title="シェア"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
+                        </svg>
+                      </button>
+                      <button
                         onClick={() => onEdit(post)}
                         className="text-xs text-blue-400 hover:text-blue-600 px-2 py-1 rounded hover:bg-blue-50"
                       >
@@ -137,6 +158,15 @@ export default function Map({ posts, center, zoom, onMapClick, pendingLat, pendi
                         }`}
                       >
                         {isBookmarked ? '★ 保存済み' : '☆ 保存'}
+                      </button>
+                      <button
+                        onClick={() => sharePost(post)}
+                        className="text-gray-400 hover:text-blue-500 p-1 rounded hover:bg-blue-50"
+                        title="シェア"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
+                        </svg>
                       </button>
                     </>
                   )}
