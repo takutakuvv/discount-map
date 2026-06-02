@@ -2,11 +2,16 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: '割引マップ',
+  title: 'Waribiki Map - 近くのお得情報をみんなで共有',
   description: 'スーパーやお店の割引・タイムセール情報をリアルタイムで共有できる口コミマップ。近所のお得情報を地図で確認しよう。',
+  metadataBase: new URL('https://www.waribiki-map.com'),
   verification: { google: '8rdv6-oBxoLXhDcxQa41xRmsPNIYtLRMosa_A3xjWdY' },
   alternates: {
     canonical: 'https://www.waribiki-map.com',
+  },
+  robots: {
+    index: true,
+    follow: true,
   },
 }
 
