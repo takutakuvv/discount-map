@@ -23,7 +23,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="h-full bg-gray-50">
         {children}
-        <footer className="py-3 text-center bg-gray-50">
+        <footer className="py-3 text-center bg-gray-50 flex justify-center gap-4">
+          <a href="/about" className="text-xs text-gray-400 hover:text-gray-600">Waribiki Mapとは</a>
+          <a href="/faq" className="text-xs text-gray-400 hover:text-gray-600">よくある質問</a>
           <a href="/privacy" className="text-xs text-gray-400 hover:text-gray-600">プライバシーポリシー</a>
         </footer>
       </body>

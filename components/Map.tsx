@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet'
 import L from 'leaflet'
 import type { Post } from '@/app/page'
@@ -19,7 +19,7 @@ function sharePost(post: Post) {
 
 const CATEGORY_ICONS: Record<string, string> = {
   'スーパー': '🛒', 'コンビニ': '🏪', 'ドラッグストア': '💊',
-  '飲食店': '🍽️', 'ショッピング': '🛍️', 'その他': '📦',
+  '飲食店': '🍽️', 'その他': '📦',
 }
 
 const storeIcon = new L.Icon({
@@ -40,6 +40,45 @@ const selectedIcon = new L.Icon({
   shadowSize: [41, 41],
 })
 
+function clusterIcon(count: number) {
+  const size = count > 99 ? 48 : 40
+  return L.divIcon({
+    html: `<div style="width:${size}px;height:${size}px;background:#16a34a;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:${count > 99 ? 13 : 15}px;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.25)">${count > 99 ? '99+' : count}</div>`,
+    className: '',
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+  })
+}
+
+interface Cluster {
+  center: [number, number]
+  posts: Post[]
+}
+
+function computeClusters(posts: Post[], zoom: number): Cluster[] {
+  if (zoom >= 17) return posts.map(p => ({ center: [p.lat, p.lng], posts: [p] }))
+  const threshold = 0.05 / Math.pow(2, zoom - 10)
+  const processed = new Set<string>()
+  const clusters: Cluster[] = []
+
+  for (const post of posts) {
+    if (processed.has(post.id)) continue
+    const nearby: Post[] = [post]
+    processed.add(post.id)
+    for (const other of posts) {
+      if (processed.has(other.id)) continue
+      if (Math.abs(post.lat - other.lat) < threshold && Math.abs(post.lng - other.lng) < threshold) {
+        nearby.push(other)
+        processed.add(other.id)
+      }
+    }
+    const lat = nearby.reduce((s, p) => s + p.lat, 0) / nearby.length
+    const lng = nearby.reduce((s, p) => s + p.lng, 0) / nearby.length
+    clusters.push({ center: [lat, lng], posts: nearby })
+  }
+  return clusters
+}
+
 function formatExpiry(expiresAt: Date | null) {
   if (!expiresAt) return ''
   const now = new Date()
@@ -50,11 +89,16 @@ function formatExpiry(expiresAt: Date | null) {
   return `残り${days}日`
 }
 
-function ClickHandler({ onMapClick }: { onMapClick: (lat: number, lng: number) => void }) {
-  useMapEvents({
-    click(e) {
-      onMapClick(e.latlng.lat, e.latlng.lng)
-    },
+function MapEvents({
+  onMapClick,
+  onZoomChange,
+}: {
+  onMapClick: (lat: number, lng: number) => void
+  onZoomChange: (zoom: number) => void
+}) {
+  const map = useMapEvents({
+    click(e) { onMapClick(e.latlng.lat, e.latlng.lng) },
+    zoomend() { onZoomChange(map.getZoom()) },
   })
   return null
 }
@@ -76,6 +120,7 @@ interface MapProps {
 
 export default function Map({ posts, center, zoom, onMapClick, pendingLat, pendingLng, currentUserId, onThanks, onDelete, bookmarkedIds, onBookmark, onEdit }: MapProps) {
   const mapRef = useRef<L.Map | null>(null)
+  const [currentZoom, setCurrentZoom] = useState(13)
 
   useEffect(() => {
     if (mapRef.current) {
@@ -83,19 +128,39 @@ export default function Map({ posts, center, zoom, onMapClick, pendingLat, pendi
     }
   }, [center, zoom])
 
+  const clusters = computeClusters(posts, currentZoom)
+
   return (
     <MapContainer center={center} zoom={13} className="w-full h-full" ref={mapRef}>
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      <ClickHandler onMapClick={onMapClick} />
+      <MapEvents onMapClick={onMapClick} onZoomChange={setCurrentZoom} />
 
       {pendingLat !== null && pendingLng !== null && (
         <Marker position={[pendingLat, pendingLng]} icon={selectedIcon} />
       )}
 
-      {posts.map(post => {
+      {clusters.map((cluster, idx) => {
+        if (cluster.posts.length > 1) {
+          return (
+            <Marker
+              key={`cluster-${idx}`}
+              position={cluster.center}
+              icon={clusterIcon(cluster.posts.length)}
+              eventHandlers={{
+                click() {
+                  if (mapRef.current) {
+                    mapRef.current.setView(cluster.center, currentZoom + 2)
+                  }
+                },
+              }}
+            />
+          )
+        }
+
+        const post = cluster.posts[0]
         const alreadyThanked = post.thanks.includes(currentUserId)
         const isOwn = post.userId === currentUserId
         const isBookmarked = bookmarkedIds.includes(post.id)

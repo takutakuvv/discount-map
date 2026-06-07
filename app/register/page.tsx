@@ -37,7 +37,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-full flex items-center justify-center px-4">
+    <div className="min-h-full flex items-center justify-center px-4 bg-green-50">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <div className="w-14 h-14 bg-green-600 rounded-2xl flex items-center justify-center mx-auto mb-4">

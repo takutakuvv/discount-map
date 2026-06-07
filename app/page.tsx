@@ -28,7 +28,7 @@ export interface Post {
   imageUrl: string | null
 }
 
-export const CATEGORIES = ['スーパー', 'コンビニ', 'ドラッグストア', '飲食店', 'ショッピング', 'その他'] as const
+export const CATEGORIES = ['スーパー', 'コンビニ', 'ドラッグストア', '飲食店', 'その他'] as const
 export const CATEGORY_ICONS: Record<string, string> = {
   'スーパー': '🛒', 'コンビニ': '🏪', 'ドラッグストア': '💊',
   '飲食店': '🍽️', 'ショッピング': '🛍️', 'その他': '📦',
@@ -163,6 +163,8 @@ export default function Home() {
   const [postCategory, setPostCategory] = useState('その他')
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null)
+  const uploadingRef = useRef<Promise<string | null> | null>(null)
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null)
   const lastQueriedRef = useRef<{ lat: number, lng: number } | null>(null)
 
@@ -418,6 +420,8 @@ export default function Home() {
     setPostCategory('その他')
     setImageFile(null)
     setImagePreview(null)
+    setUploadedImageUrl(null)
+    uploadingRef.current = null
   }
 
   function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
@@ -425,6 +429,19 @@ export default function Home() {
     if (!file) return
     setImageFile(file)
     setImagePreview(URL.createObjectURL(file))
+    setUploadedImageUrl(null)
+    if (user) {
+      const uploadPromise = (async () => {
+        try {
+          const uploadRef = ref(storage, `posts/${user.uid}/${Date.now()}.jpg`)
+          await uploadBytes(uploadRef, file)
+          const url = await getDownloadURL(uploadRef)
+          setUploadedImageUrl(url)
+          return url
+        } catch { return null }
+      })()
+      uploadingRef.current = uploadPromise
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -441,11 +458,13 @@ export default function Home() {
       expiresAt = Timestamp.fromDate(d)
     }
 
-    let uploadedImageUrl: string | null = null
-    if (imageFile) {
-      const uploadRef = ref(storage, `posts/${user.uid}/${Date.now()}.jpg`)
-      await uploadBytes(uploadRef, imageFile)
-      uploadedImageUrl = await getDownloadURL(uploadRef)
+    let finalImageUrl: string | null = uploadedImageUrl
+    if (imageFile && !finalImageUrl) {
+      finalImageUrl = await (uploadingRef.current ?? (async () => {
+        const uploadRef = ref(storage, `posts/${user.uid}/${Date.now()}.jpg`)
+        await uploadBytes(uploadRef, imageFile)
+        return getDownloadURL(uploadRef)
+      })())
     }
 
     await addDoc(collection(db, 'posts'), {
@@ -455,7 +474,7 @@ export default function Home() {
       createdAt: Timestamp.now(),
       thanks: [],
       category: postCategory,
-      imageUrl: uploadedImageUrl,
+      imageUrl: finalImageUrl,
     })
 
     setSubmitting(false)
@@ -468,6 +487,8 @@ export default function Home() {
     setPostCategory('その他')
     setImageFile(null)
     setImagePreview(null)
+    setUploadedImageUrl(null)
+    uploadingRef.current = null
     fetchPosts(region)
   }
 
@@ -779,8 +800,8 @@ export default function Home() {
         <div className="flex-shrink-0 bg-white border-t border-gray-200 p-4 z-10">
           <form onSubmit={handleSubmit} className="space-y-3">
             <p className="text-xs text-green-700 font-medium">場所を選択済み ✓</p>
-            <input type="text" value={storeName} onChange={e => setStoreName(e.target.value)} required
-              placeholder="お店の名前（例：イオン渋谷店）"
+            <input type="text" value={storeName} onChange={e => setStoreName(e.target.value)}
+              placeholder="お店の名前（任意）"
               className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
             <input type="text" value={discount} onChange={e => setDiscount(e.target.value)} required
               placeholder="割引情報（例：牛肉30%オフ、本日限り）"
@@ -1134,8 +1155,8 @@ export default function Home() {
                                 )}
                               </div>
                               <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                                <span className="flex items-center gap-1 text-xs text-gray-400">
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                <span className="flex items-center gap-1 text-sm text-gray-400">
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M14 9V5a3 3 0 00-3-3l-4 8v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z"/>
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/>
                                   </svg>
@@ -1146,7 +1167,7 @@ export default function Home() {
                                   className="p-1.5 text-gray-400 hover:text-blue-500 rounded-lg hover:bg-blue-50 transition-colors"
                                   title="シェア"
                                 >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
                                   </svg>
                                 </button>
@@ -1154,7 +1175,7 @@ export default function Home() {
                                   onClick={() => handleOpenEdit(post)}
                                   className="p-1.5 text-gray-400 hover:text-blue-500 rounded-lg hover:bg-blue-50 transition-colors"
                                 >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                   </svg>
                                 </button>
@@ -1162,7 +1183,7 @@ export default function Home() {
                                   onClick={() => { if (window.confirm('この投稿を削除しますか？')) handleDelete(post.id) }}
                                   className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
                                 >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                   </svg>
                                 </button>
