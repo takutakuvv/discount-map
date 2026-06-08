@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://www.waribiki-map.com'),
   verification: { google: '8rdv6-oBxoLXhDcxQa41xRmsPNIYtLRMosa_A3xjWdY' },
   alternates: {
-    canonical: 'https://www.waribiki-map.com',
+    canonical: 'https://www.waribiki-map.com/',
   },
   robots: {
     index: true,
