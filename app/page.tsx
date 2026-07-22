@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import dynamic from 'next/dynamic'
+import AdSense from '@/components/AdSense'
 import { onAuthStateChanged, signOut, User } from 'firebase/auth'
 import {
   collection, addDoc, getDocs, query, where, Timestamp, orderBy, limit,
@@ -585,6 +586,9 @@ export default function Home() {
         </div>
       </div>
 
+      <div className="border-t border-gray-100 px-4 py-2">
+        <AdSense />
+      </div>
       <footer className="border-t border-gray-100 px-6 py-6 text-center text-xs text-gray-400">
         © 2025 Waribiki Map
       </footer>
